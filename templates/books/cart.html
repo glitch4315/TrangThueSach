@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ Hàng - BookFire</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #e0e0e0; }
+
+        .header { background: #1a1a1a; border-bottom: 1px solid #2a2a2a; padding: 1rem 0; }
+        .nav-container { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.8rem; font-weight: bold; color: #ff6b6b; text-decoration: none; }
+        .logo span { color: #fff; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 3rem 2rem; }
+        h1 { color: white; font-size: 2.5rem; margin-bottom: 2rem; }
+
+        .cart-content { display: grid; grid-template-columns: 1fr 400px; gap: 2rem; }
+        .cart-items { background: #1a1a1a; border-radius: 12px; padding: 2rem; }
+
+        .cart-item { display: flex; gap: 1.5rem; padding: 1.5rem; background: #2a2a2a; border-radius: 8px; margin-bottom: 1rem; }
+        .item-image {
+            width: 100px;
+            height: 140px;
+            background: #3a3a3a;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .item-image .placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: #666;
+        }
+        .item-details { flex: 1; }
+        .item-title { color: white; font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .item-meta { color: #888; margin-bottom: 1rem; }
+        .item-quantity { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+        .item-quantity input { width: 80px; padding: 0.5rem; background: #1a1a1a; border: 1px solid #3a3a3a; border-radius: 6px; color: white; text-align: center; }
+        .item-price { color: #ff6b6b; font-size: 1.5rem; font-weight: bold; }
+        .item-subtotal { color: #888; font-size: 0.9rem; margin-top: 0.5rem; }
+        .item-actions { display: flex; align-items: center; }
+        .btn-remove { background: #4d1a1a; color: #ff6b6b; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; transition: all 0.3s; }
+        .btn-remove:hover { background: #ff6b6b; color: white; }
+
+        .cart-summary { background: #1a1a1a; border-radius: 12px; padding: 2rem; height: fit-content; position: sticky; top: 2rem; }
+        .summary-title { color: white; font-size: 1.5rem; margin-bottom: 1.5rem; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 1rem; color: #b0b0b0; }
+        .summary-row.total { font-size: 1.5rem; color: white; font-weight: bold; padding-top: 1rem; border-top: 1px solid #2a2a2a; }
+
+        .btn { padding: 1rem 2rem; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; transition: all 0.3s; font-weight: 600; text-decoration: none; display: block; text-align: center; }
+        .btn-primary { background: #ff6b6b; color: white; width: 100%; margin-top: 1.5rem; }
+        .btn-primary:hover { background: #ff5252; transform: translateY(-2px); }
+        .btn-secondary { background: transparent; color: #ff6b6b; border: 2px solid #ff6b6b; margin-top: 1rem; }
+        .btn-secondary:hover { background: #ff6b6b; color: white; }
+
+        .empty-cart { text-align: center; padding: 4rem 2rem; }
+        .empty-cart h2 { color: white; margin-bottom: 1rem; }
+        .empty-cart p { color: #888; margin-bottom: 2rem; }
+
+        @media (max-width: 768px) {
+            .cart-content { grid-template-columns: 1fr; }
+            .cart-item { flex-direction: column; }
+            .item-image { width: 100%; height: 200px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <a href="/" class="logo">Book<span>Fire</span></a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h1>Giỏ Hàng Của Bạn</h1>
+
+        {% if cart_items %}
+        <div class="cart-content">
+            <div class="cart-items">
+                {% for item in cart_items %}
+                <div class="cart-item">
+                    <div class="item-image">
+                        {% if item.book_image %}
+                            <img src="{{ item.book_image }}" alt="{{ item.book_title }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="placeholder" style="display: none;">📖</div>
+                        {% else %}
+                            <div class="placeholder">📖</div>
+                        {% endif %}
+                    </div>
+                    <div class="item-details">
+                        <h3 class="item-title">{{ item.book_title }}</h3>
+                        <p class="item-meta">{{ item.price_per_day|floatformat:0 }}k/ngày × {{ item.rental_days }} ngày</p>
+                        <div class="item-quantity">
+                            <label style="color: #888;">Số ngày thuê:</label>
+                            <input type="number" value="{{ item.rental_days }}" min="1" max="30" readonly>
+                        </div>
+                        <div class="item-price">{{ item.subtotal|floatformat:0 }}k</div>
+                        <div class="item-subtotal">({{ item.price_per_day|floatformat:0 }}k × {{ item.rental_days }} ngày)</div>
+                    </div>
+                    <div class="item-actions">
+                        <form action="{% url 'remove_from_cart' item.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-remove">Xóa</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="cart-summary">
+                <h3 class="summary-title">Tóm Tắt Đơn Hàng</h3>
+                <div class="summary-row">
+                    <span>Số lượng sách:</span>
+                    <span>{{ cart_count }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tạm tính:</span>
+                    <span>{{ total|floatformat:0 }}k</span>
+                </div>
+                <div class="summary-row">
+                    <span>Phí giao hàng:</span>
+                    <span>Miễn phí</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Tổng cộng:</span>
+                    <span>{{ total|floatformat:0 }}k</span>
+                </div>
+                <a href="{% url 'checkout' %}" class="btn btn-primary">Tiến Hành Thanh Toán</a>
+                <a href="/" class="btn btn-secondary">Tiếp Tục Mua Sắm</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-cart">
+            <h2>Giỏ hàng trống</h2>
+            <p>Bạn chưa có sách nào trong giỏ hàng</p>
+            <a href="/" class="btn btn-primary" style="max-width: 300px; margin: 0 auto;">Khám Phá Sách Ngay</a>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

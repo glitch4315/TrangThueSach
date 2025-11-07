@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đặt Hàng Thành Công - BookFire</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #e0e0e0; }
+
+        .header { background: #1a1a1a; border-bottom: 1px solid #2a2a2a; padding: 1rem 0; }
+        .nav-container { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.8rem; font-weight: bold; color: #ff6b6b; text-decoration: none; }
+        .logo span { color: #fff; }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 3rem 2rem; text-align: center; }
+
+        .success-icon { width: 120px; height: 120px; background: linear-gradient(135deg, #4ade80, #22c55e); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 4rem; margin: 0 auto 2rem; animation: scaleIn 0.5s ease-out; }
+
+        @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+
+        h1 { color: white; font-size: 2.5rem; margin-bottom: 1rem; }
+        .subtitle { color: #b0b0b0; font-size: 1.2rem; margin-bottom: 3rem; }
+
+        .order-card { background: #1a1a1a; border-radius: 12px; padding: 2rem; margin-bottom: 2rem; text-align: left; }
+        .order-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid #2a2a2a; margin-bottom: 1.5rem; }
+        .order-number { color: white; font-size: 1.3rem; font-weight: bold; }
+        .order-status { background: #1a4d1a; color: #4ade80; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.9rem; }
+
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+        .info-label { color: #888; }
+        .info-value { color: white; font-weight: 600; }
+
+        .order-items { margin-top: 2rem; }
+        .item { display: flex; justify-content: space-between; padding: 1rem; background: #2a2a2a; border-radius: 8px; margin-bottom: 0.5rem; }
+        .item-name { color: white; }
+        .item-details { color: #888; font-size: 0.9rem; }
+        .item-price { color: #ff6b6b; font-weight: bold; }
+
+        .total-row { display: flex; justify-content: space-between; padding-top: 1rem; border-top: 1px solid #2a2a2a; margin-top: 1rem; font-size: 1.5rem; color: white; font-weight: bold; }
+
+        .actions { display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; }
+        .btn { padding: 1rem 2rem; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: all 0.3s; font-weight: 600; text-decoration: none; display: inline-block; }
+        .btn-primary { background: #ff6b6b; color: white; }
+        .btn-primary:hover { background: #ff5252; transform: translateY(-2px); }
+        .btn-secondary { background: transparent; color: #ff6b6b; border: 2px solid #ff6b6b; }
+        .btn-secondary:hover { background: #ff6b6b; color: white; }
+
+        .alert { background: #1a3a4d; color: #4ade80; border: 1px solid #2a4a5d; padding: 1.5rem; border-radius: 8px; margin-top: 2rem; }
+        .alert h3 { margin-bottom: 0.5rem; }
+        .alert ul { list-style: none; padding-left: 0; }
+        .alert li { margin-bottom: 0.5rem; }
+        .alert li::before { content: "✓ "; color: #4ade80; font-weight: bold; }
+
+        @media (max-width: 768px) {
+            .actions { flex-direction: column; }
+            .order-header { flex-direction: column; gap: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <a href="/" class="logo">Book<span>Fire</span></a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="success-icon">✓</div>
+        <h1>Đặt Hàng Thành Công!</h1>
+        <p class="subtitle">Cảm ơn bạn đã tin tưởng BookFire. Đơn hàng của bạn đang được xử lý.</p>
+
+        <div class="order-card">
+            <div class="order-header">
+                <div>
+                    <div style="color: #888; font-size: 0.9rem; margin-bottom: 0.3rem;">Mã Đơn Hàng</div>
+                    <div class="order-number">{{ order.order_number }}</div>
+                </div>
+                <div class="order-status">✅ Đã Xác Nhận</div>
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Khách hàng:</span>
+                <span class="info-value">{{ order.customer_name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value">{{ order.customer_email }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Số điện thoại:</span>
+                <span class="info-value">{{ order.customer_phone }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Địa chỉ giao hàng:</span>
+                <span class="info-value">{{ order.customer_address }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Phương thức thanh toán:</span>
+                <span class="info-value">
+                    {% if order.payment_method == 'cod' %}💵 Tiền mặt
+                    {% elif order.payment_method == 'bank' %}🏦 Chuyển khoản
+                    {% elif order.payment_method == 'momo' %}📱 MoMo
+                    {% else %}💳 Thẻ tín dụng
+                    {% endif %}
+                </span>
+            </div>
+
+            <div class="order-items">
+                <h3 style="color: white; margin-bottom: 1rem;">Chi Tiết Đơn Hàng</h3>
+                {% for item in order_items %}
+                <div class="item">
+                    <div>
+                        <div class="item-name">{{ item.book_title }}</div>
+                        <div class="item-details">{{ item.rental_days }} ngày × {{ item.price_per_day }}k/ngày</div>
+                    </div>
+                    <div class="item-price">{{ item.subtotal|floatformat:0 }}k</div>
+                </div>
+                {% endfor %}
+
+                <div class="total-row">
+                    <span>Tổng Cộng:</span>
+                    <span style="color: #ff6b6b;">{{ order.total_amount|floatformat:0 }}k VNĐ</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="/" class="btn btn-primary">Tiếp Tục Mua Sắm</a>
+            <a href="#" class="btn btn-secondary" onclick="window.print(); return false;">In Đơn Hàng</a>
+        </div>
+    </div>
+
+    <script>
+        // Gửi email xác nhận (trong thực tế sẽ gửi từ backend)
+        console.log('Đơn hàng đã được tạo: {{ order.order_number }}');
+    </script>
+</body>
+</html>

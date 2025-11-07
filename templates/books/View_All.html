@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookFire - Xem Tất Cả Sách</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#0f0f0f; color:#e0e0e0; }
+        .header { background:#1a1a1a; border-bottom:1px solid #2a2a2a; padding:1rem 2rem; position:sticky; top:0; z-index:1000; display:flex; justify-content:space-between; align-items:center; }
+        .logo { font-size:1.8rem; font-weight:bold; color:#ff6b6b; text-decoration:none; }
+        .logo span { color:#fff; }
+        .nav-links a { color:#e0e0e0; text-decoration:none; margin-left:1rem; }
+        .nav-links a:hover { color:#ff6b6b; }
+        .container { max-width:1400px; margin:2rem auto; padding:0 2rem; }
+        .section { margin-bottom:3rem; }
+        .section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; }
+        .section-title { font-size:1.8rem; font-weight:bold; color:white; display:flex; align-items:center; }
+        .section-title::before { content:''; width:4px; height:24px; background:#ff6b6b; margin-right:0.8rem; display:inline-block; }
+        .books-grid { display:flex; flex-wrap:wrap; gap:1.5rem; }
+        .book-card { width:180px; background:#1a1a1a; border-radius:12px; overflow:hidden; cursor:pointer; transition:0.3s; }
+        .book-card:hover { transform:translateY(-5px); box-shadow:0 8px 30px rgba(255,107,107,0.3); }
+        .book-cover { width:100%; height:260px; background:linear-gradient(135deg,#2a2a2a 0%,#3a3a3a 100%); position:relative; }
+        .book-cover img { width:100%; height:100%; object-fit:cover; }
+        .book-badge { position:absolute; top:8px; left:8px; background:#ff6b6b; color:white; padding:0.3rem 0.6rem; border-radius:4px; font-size:0.75rem; font-weight:600; }
+        .book-badge.new { background:#4ecdc4; }
+        .book-rating { position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.8); color:#ffd700; padding:0.3rem 0.6rem; border-radius:4px; font-size:0.85rem; font-weight:bold; }
+        .book-info { padding:1rem; }
+        .book-title { font-size:0.95rem; font-weight:600; color:white; margin-bottom:0.5rem; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.8rem; }
+        .book-author { font-size:0.85rem; color:#888; margin-bottom:0.5rem; }
+        .book-footer { display:flex; justify-content:space-between; align-items:center; }
+        .book-price { color:#ff6b6b; font-weight:bold; font-size:1.1rem; }
+        .book-price small { font-size:0.75rem; color:#888; }
+        .quick-add { background:#2a2a2a; border:1px solid #3a3a3a; color:white; padding:0.4rem 0.8rem; border-radius:6px; font-size:0.85rem; cursor:pointer; transition:0.3s; }
+        .quick-add:hover { background:#ff6b6b; border-color:#ff6b6b; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a href="/" class="logo">Book<span>Fire</span></a>
+        <div class="nav-links">
+            <a href="/">Trang Chủ</a>
+            <a href="{% url 'cart' %}">🛒 Giỏ Hàng</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'profile' %}">{{ user.username }}</a>
+                <a href="{% url 'logout' %}">Đăng xuất</a>
+            {% else %}
+                <a href="{% url 'login' %}">Đăng nhập</a>
+                <a href="{% url 'register' %}">Đăng ký</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Container -->
+    <div class="container">
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">{{ section_title }}</h2>
+                <a href="/" class="view-all">Trang Chủ →</a>
+            </div>
+
+            <div class="books-grid">
+                {% for book in books %}
+                <div class="book-card" onclick="window.location.href='{% url 'book_detail' book.id %}'">
+                    <div class="book-cover">
+                        {% if book.cover_image %}
+                        <img src="{{ book.cover_image }}" alt="{{ book.title }}">
+                        {% else %}
+                        <div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:3rem;">📖</div>
+                        {% endif %}
+                        {% if section_label %}
+                        <span class="book-badge {{ section_label_class }}">{{ section_label }}</span>
+                        {% endif %}
+                        <span class="book-rating">⭐ {{ book.rating }}</span>
+                    </div>
+                    <div class="book-info">
+                        <h3 class="book-title">{{ book.title }}</h3>
+                        <p class="book-author">{{ book.author }}</p>
+                        <div class="book-footer">
+                            <div class="book-price">{{ book.rental_price_per_day }}k <small>/ngày</small></div>
+                            <button class="quick-add" onclick="event.stopPropagation(); window.location.href='{% url 'book_detail' book.id %}'">+</button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</body>
+</html>
