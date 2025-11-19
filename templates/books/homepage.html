@@ -1,4 +1,4 @@
-<!-- templates/books/homepage.html -->
+﻿<!-- templates/books/homepage.html -->
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -484,13 +484,14 @@
         </div>
     <div class="nav-right">
         {% if user.is_authenticated %}
-        <span>{{ user.username }}</span>
-        <a href="{% url 'profile' %}">Hồ sơ</a>
-        <a href="{% url 'logout' %}">Đăng xuất</a>
-        {% else %}
-        <a href="{% url 'login' %}" class="btn btn-secondary">Đăng nhập</a>
-        <a href="{% url 'register' %}" class="btn btn-primary">Đăng ký</a>
-        {% endif %}
+    <span>{{ user.username }}</span>
+    <a href="{% url 'accounts:profile' %}">Hồ sơ</a>
+    <a href="{% url 'accounts:logout' %}">Đăng xuất</a>
+{% else %}
+    <a href="{% url 'accounts:login' %}" class="btn btn-secondary">Đăng nhập</a>
+    <a href="{% url 'accounts:register' %}" class="btn btn-primary">Đăng ký</a>
+{% endif %}
+
     </div></nav>
 
             <a href="/" class="logo">Book<span>Fire</span></a>
@@ -506,6 +507,7 @@
                 <a href="/">Trang Chủ</a>
                 <a href="#trending">Thịnh Hành</a>
                 <a href="#new">Mới Nhất</a>
+                <a href="{% url 'my_rentals' %}">Sách Đã Thuê</a>
                 <a href="{% url 'cart' %}" class="cart-btn">
                     🛒 Giỏ Hàng
                     {% if cart_count > 0 %}

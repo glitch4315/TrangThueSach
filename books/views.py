@@ -1,19 +1,21 @@
+from bson import ObjectId
+from django.http import HttpResponseBadRequest
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.db.models import Q
-from .models import Book, CartItem, Order, OrderItem
-from datetime import datetime
-import random
-import string
-from bson.decimal128 import Decimal128
+from django.utils import timezone
 from decimal import Decimal
+import random
+from datetime import datetime, timedelta
+import string
+import uuid
+from .models import Book, CartItem, Order, OrderItem, Rental
+from pymongo import MongoClient
 
+mongo_client = MongoClient('localhost', 27017)
+mongo_db = mongo_client['bookrental_db']
 
-# ✅ Hàm ép kiểu an toàn cho Decimal / Decimal128 / str / None
 def safe_decimal(value):
-    if isinstance(value, Decimal128):
-        return value.to_decimal()
-    elif isinstance(value, Decimal):
+    if isinstance(value, Decimal):
         return value
     elif isinstance(value, (int, float, str)):
         try:
@@ -22,13 +24,13 @@ def safe_decimal(value):
             return Decimal(0)
     return Decimal(0)
 
-
 def get_session_id(request):
     if not request.session.session_key:
         request.session.create()
     return request.session.session_key
 
 
+# -------------------- HOMEPAGE --------------------
 def homepage(request):
     search = request.GET.get('search', '')
     category = request.GET.get('category', '')
@@ -36,10 +38,7 @@ def homepage(request):
     all_books = list(Book.objects.all())
 
     if search:
-        all_books = [
-            b for b in all_books
-            if search.lower() in b.title.lower() or search.lower() in b.author.lower()
-        ]
+        all_books = [b for b in all_books if search.lower() in b.title.lower() or search.lower() in b.author.lower()]
 
     if category:
         all_books = [b for b in all_books if b.category == category]
@@ -51,7 +50,6 @@ def homepage(request):
         reverse=True
     )[:10]
 
-    # ✅ Fix Decimal128 lỗi khi sort rating
     top_rated_books = sorted(
         all_books,
         key=lambda x: float(safe_decimal(x.rating)),
@@ -59,7 +57,6 @@ def homepage(request):
     )[:10]
 
     categories = sorted(set(b.category for b in all_books if b.category))
-
     session_id = get_session_id(request)
     cart_count = CartItem.objects.filter(session_id=session_id).count()
 
@@ -73,16 +70,22 @@ def homepage(request):
         "selected_category": category,
         "cart_count": cart_count,
     }
-
     return render(request, "books/homepage.html", context)
 
 
+# -------------------- BOOK DETAIL --------------------
 def book_detail(request, book_id):
-    book = get_object_or_404(Book, id=book_id)
-    book.rental_price_per_day = safe_decimal(book.rental_price_per_day)
-    book.rating = safe_decimal(book.rating)
+    try:
+        obj_id = ObjectId(book_id)
+    except:
+        messages.error(request, "Sách không tồn tại!")
+        return redirect('homepage')
 
+    book = get_object_or_404(Book, _id=obj_id)
     return render(request, "books/book_detail.html", {"book": book})
+
+
+# -------------------- VIEW ALL BOOKS --------------------
 def view_all_books(request, filter_type):
     all_books = list(Book.objects.all())
 
@@ -97,11 +100,7 @@ def view_all_books(request, filter_type):
         )
         title = "Sách Mới Cập Nhật"
     elif filter_type == 'top_rated':
-        books = sorted(
-            all_books,
-            key=lambda x: float(safe_decimal(x.rating)),
-            reverse=True
-        )
+        books = sorted(all_books, key=lambda x: float(safe_decimal(x.rating)), reverse=True)
         title = "Sách Đánh Giá Cao Nhất"
     else:
         books = all_books
@@ -112,177 +111,291 @@ def view_all_books(request, filter_type):
     cart_count = CartItem.objects.filter(session_id=session_id).count()
 
     context = {
-        'books': books,
-        'title': title,
-        'categories': categories,
-        'cart_count': cart_count,
+        "books": books,
+        "title": title,
+        "categories": categories,
+        "cart_count": cart_count,
     }
-    return render(request, 'books/View_All.html', context)
-
+    return render(request, "books/View_All.html", context)
 
 def add_to_cart(request, book_id):
-    if request.method == 'POST':
-        book = get_object_or_404(Book, id=book_id)
-        rental_days = int(request.POST.get('rental_days', 7))
-        session_id = get_session_id(request)
+    if request.method != "POST":
+        return HttpResponseBadRequest("Invalid request method")
 
-        price_per_day = safe_decimal(book.rental_price_per_day)
-        cart_item = CartItem.objects.filter(
-            session_id=session_id,
-            book_id=str(book_id)
-        ).first()
+    rental_days = request.POST.get("rental_days")
+    if not rental_days:
+        return HttpResponseBadRequest("Rental days not provided")
 
-        if cart_item:
-            cart_item.rental_days = rental_days
-            cart_item.price_per_day = price_per_day
-            # ✅ Cập nhật hình ảnh nếu có
-            if hasattr(book, 'cover_image') and book.cover_image:
-                cart_item.book_image = book.cover_image.url if hasattr(book.cover_image, 'url') else str(
-                    book.cover_image)
-            cart_item.save()
-            messages.success(request, f'Đã cập nhật "{book.title}" trong giỏ hàng!')
-        else:
-            # ✅ Lấy URL hình ảnh
-            book_image = ''
-            if hasattr(book, 'cover_image') and book.cover_image:
-                book_image = book.cover_image.url if hasattr(book.cover_image, 'url') else str(book.cover_image)
+    try:
+        rental_days = int(rental_days)
+        if rental_days <= 0:
+            raise ValueError
+    except ValueError:
+        return HttpResponseBadRequest("Invalid rental days")
 
-            CartItem.objects.create(
-                session_id=session_id,
-                book_id=str(book_id),
-                book_title=book.title,
-                book_image=book_image,  # ✅ Thêm hình ảnh
-                rental_days=rental_days,
-                price_per_day=price_per_day
-            )
-            messages.success(request, f'Đã thêm "{book.title}" vào giỏ hàng!')
+    # Chuyển book_id sang ObjectId
+    try:
+        obj_id = ObjectId(book_id)
+    except:
+        return HttpResponseBadRequest("Invalid book ID")
 
+    book = get_object_or_404(Book, _id=obj_id)
+
+    cart = request.session.get("cart", {})
+
+    if book_id in cart:
+        cart[book_id]["rental_days"] += rental_days
+    else:
+        cart[book_id] = {
+            "title": book.title,
+            "rental_price_per_day": float(book.rental_price_per_day),
+            "rental_days": rental_days
+        }
+
+    request.session["cart"] = cart
+    request.session.modified = True
     return redirect('cart')
 
 
 def cart(request):
-    session_id = get_session_id(request)
-    cart_items = CartItem.objects.filter(session_id=session_id)
-
-    # ✅ Tính tổng tiền cho từng item
+    cart = request.session.get("cart", {})
     cart_items_with_subtotal = []
     total = 0
 
-    for item in cart_items:
-        price = float(safe_decimal(item.price_per_day))
-        subtotal = price * int(item.rental_days)
+    for book_id, item in cart.items():
+        subtotal = item["rental_price_per_day"] * item["rental_days"]
         total += subtotal
-
-        # Thêm subtotal vào item để hiển thị
-        item.subtotal = subtotal
+        item["subtotal"] = subtotal
+        item["book_id"] = book_id
         cart_items_with_subtotal.append(item)
 
     cart_count = len(cart_items_with_subtotal)
 
     context = {
-        'cart_items': cart_items_with_subtotal,
-        'total': total,
-        'cart_count': cart_count,
+        "cart_items": cart_items_with_subtotal,
+        "total": total,
+        "cart_count": cart_count,
     }
     return render(request, 'books/cart.html', context)
 
 
 def remove_from_cart(request, item_id):
-    session_id = get_session_id(request)
-    cart_item = get_object_or_404(CartItem, id=item_id, session_id=session_id)
-    cart_item.delete()
-    messages.success(request, 'Đã xóa sách khỏi giỏ hàng!')
+    cart = request.session.get("cart", {})
+    if item_id in cart:
+        del cart[item_id]
+        request.session["cart"] = cart
+        request.session.modified = True
     return redirect('cart')
 
 
 def checkout(request):
-    session_id = get_session_id(request)
-    cart_items = CartItem.objects.filter(session_id=session_id)
-
-    if not cart_items:
+    cart = request.session.get('cart', {})
+    if not cart:
         messages.error(request, 'Giỏ hàng trống!')
         return redirect('cart')
 
-    total = sum(
-        float(safe_decimal(item.price_per_day)) * int(item.rental_days)
-        for item in cart_items
-    )
-    cart_count = cart_items.count()
-
+    total = sum(item["rental_price_per_day"] * item["rental_days"] for item in cart.values())
     context = {
-        'cart_items': cart_items,
+        'cart_items': cart.values(),
         'total': total,
-        'cart_count': cart_count,
+        'cart_count': len(cart),
     }
     return render(request, 'books/checkout.html', context)
 
 
 def process_order(request):
-    if request.method == 'POST':
-        session_id = get_session_id(request)
-        cart_items = CartItem.objects.filter(session_id=session_id)
+    if request.method != 'POST':
+        return redirect('checkout')
 
-        if not cart_items:
-            messages.error(request, 'Giỏ hàng trống!')
-            return redirect('cart')
+    # 1. Lấy thông tin khách hàng
+    name = request.POST.get('name')
+    email = request.POST.get('email')
+    phone = request.POST.get('phone')
+    address = request.POST.get('address')
+    payment_method = request.POST.get('payment_method')
 
-        order_number = 'ORD' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+    cart = request.session.get('cart', {})
+    if not cart:
+        messages.error(request, 'Giỏ hàng trống!')
+        return redirect('cart')
 
-        total = sum(
-            float(safe_decimal(item.price_per_day)) * int(item.rental_days)
-            for item in cart_items
-        )
+    # 2. Tính tổng tiền
+    total = sum(float(item["rental_price_per_day"]) * int(item["rental_days"]) for item in cart.values())
 
-        order = Order.objects.create(
-            order_number=order_number,
-            customer_name=request.POST.get('name'),
-            customer_email=request.POST.get('email'),
-            customer_phone=request.POST.get('phone'),
-            customer_address=request.POST.get('address'),
-            total_amount=Decimal(str(total)),
-            payment_method=request.POST.get('payment_method'),
-            status='confirmed'
-        )
+    # 3. Tạo order_number
+    order_number = 'ORD' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
-        for item in cart_items:
-            price = safe_decimal(item.price_per_day)
-            subtotal = price * Decimal(item.rental_days)
+    # 4. Tạo Order trong MongoDB
+    order_data = {
+        '_id': ObjectId(),
+        'id': uuid.uuid4().hex,
+        'order_number': order_number,
+        'customer_name': name,
+        'customer_email': email,
+        'customer_phone': phone,
+        'customer_address': address,
+        'total_amount': float(total),
+        'payment_method': payment_method,
+        'status': 'confirmed',
+        'created_at': datetime.now()
+    }
+    order_result = mongo_db.orders.insert_one(order_data)
+    order_id = order_result.inserted_id
 
-            OrderItem.objects.create(
-                order_id=str(order.id),
-                book_id=item.book_id,
-                book_title=item.book_title,
-                rental_days=item.rental_days,
-                price_per_day=price,
-                subtotal=subtotal
-            )
+    # 5. Tạo OrderItems và Rentals
+    for book_id, item in cart.items():
+        # 5a. OrderItem
+        order_item_data = {
+            '_id': ObjectId(),
+            'id': uuid.uuid4().hex,
+            'order_id': str(order_id),
+            'book_id': book_id,
+            'book_title': item['title'],
+            'rental_days': int(item['rental_days']),
+            'price_per_day': float(item['rental_price_per_day']),
+            'subtotal': float(item['rental_price_per_day']) * int(item['rental_days'])
+        }
+        mongo_db.order_items.insert_one(order_item_data)
 
-            # Giảm số lượng sách có sẵn
-            book = Book.objects.get(id=item.book_id)
+        # 5b. Rental
+        try:
+            book = mongo_db.books.find_one({'_id': ObjectId(book_id)})
+            if book:
+                expected_return = datetime.now() + timedelta(days=int(item['rental_days']))
+                rental_data = {
+                    'order_id': str(order_id),
+                    'order_number': order_number,
+                    'book_id': book_id,
+                    'book_title': item['title'],
+                    'book_cover': book.get('cover_image', ''),
+                    'customer_name': name,
+                    'customer_email': email,
+                    'rental_days': int(item['rental_days']),
+                    'price_per_day': float(item['rental_price_per_day']),
+                    'total_cost': float(item['rental_price_per_day']) * int(item['rental_days']),
+                    'rental_date': datetime.now(),
+                    'expected_return_date': expected_return,
+                    'actual_return_date': None,
+                    'status': 'active',
+                    'late_fee': 0.0,
+                    'created_at': datetime.now(),
+                    'updated_at': datetime.now()
+                }
+                mongo_db.rentals.insert_one(rental_data)
 
-            # ✅ Convert all Decimal128 fields to Decimal before saving
-            book.rental_price_per_day = safe_decimal(book.rental_price_per_day)
-            book.rating = safe_decimal(book.rating)
-            # Add any other Decimal128 fields that might exist in your Book model
+                # Giảm số lượng sách
+                mongo_db.books.update_one(
+                    {'_id': ObjectId(book_id)},
+                    {'$inc': {'available_copies': -1}}
+                )
+        except Exception as e:
+            print(f"Lỗi khi tạo rental: {e}")
 
-            book.available_copies = max(0, book.available_copies - 1)
-            book.save()
+    # 6. Xóa cart
+    request.session['cart'] = {}
+    request.session.modified = True
 
-        cart_items.delete()
-
-        messages.success(request, f'Đặt hàng thành công! Mã đơn hàng: {order_number}')
-        return redirect('order_success', order_id=order.id)
+    messages.success(request, f'Đặt hàng thành công! Mã đơn hàng: {order_number}')
+    return redirect('order_success', order_id=str(order_id))
 
     return redirect('checkout')
 
 
 def order_success(request, order_id):
-    order = get_object_or_404(Order, id=order_id)
-    order_items = OrderItem.objects.filter(order_id=str(order_id))
+    try:
+        # Lấy order từ MongoDB
+        order = mongo_db.orders.find_one({'_id': ObjectId(order_id)})
+
+        if not order:
+            messages.error(request, 'Không tìm thấy đơn hàng!')
+            return redirect('homepage')
+
+        # Lấy order items
+        order_items = list(mongo_db.order_items.find({'order_id': str(order_id)}))
+
+        context = {
+            'order': order,
+            'order_items': order_items,
+            'cart_count': 0,
+        }
+        return render(request, 'books/order_success.html', context)
+
+    except Exception as e:
+        messages.error(request, f'Lỗi: {str(e)}')
+        return redirect('homepage')
+def my_rentals(request):
+    if not request.user.is_authenticated:
+        messages.error(request, "Vui lòng đăng nhập!")
+        return redirect('accounts:login')
+
+    active_rentals = Rental.objects.filter(customer_email=request.user.email, status='active')
+    for r in active_rentals:
+        if r.is_overdue():
+            r.status = 'overdue'
+            r.late_fee = r.calculate_late_fee()
+            r.save()
+
+    active_rentals = Rental.objects.filter(customer_email=request.user.email, status__in=['active','overdue'])
+    returned_rentals = Rental.objects.filter(customer_email=request.user.email, status='returned')
+    session_id = get_session_id(request)
+    cart_count = CartItem.objects.filter(session_id=session_id).count()
 
     context = {
-        'order': order,
-        'order_items': order_items,
-        'cart_count': 0,
+        "active_rentals": active_rentals,
+        "returned_rentals": returned_rentals,
+        "cart_count": cart_count,
     }
-    return render(request, 'books/order_success.html', context)
+    return render(request, "books/my_rentals.html", context)
+
+
+def return_book(request, rental_id):
+    if not request.user.is_authenticated:
+        messages.error(request, "Vui lòng đăng nhập!")
+        return redirect('accounts:login')
+
+    try:
+        rental_obj_id = ObjectId(rental_id)
+    except:
+        messages.error(request, "ID thuê sách không hợp lệ!")
+        return redirect('my_rentals')
+
+    rental = mongo_db.rentals.find_one({'_id': rental_obj_id, 'customer_email': request.user.email})
+    if not rental:
+        messages.error(request, "Không tìm thấy thuê sách này!")
+        return redirect('my_rentals')
+
+    if rental.get('status') == 'returned':
+        messages.warning(request, "Sách này đã được trả rồi!")
+        return redirect('my_rentals')
+
+    # Cập nhật rental
+    late_fee = 0
+    now = timezone.now()
+    expected_return = rental.get('expected_return_date')
+    if expected_return and now > expected_return:
+        days_overdue = (now - expected_return).days
+        late_fee = days_overdue * 10  # ví dụ 10k/ngày
+
+    mongo_db.rentals.update_one(
+        {'_id': rental_obj_id},
+        {'$set': {
+            'status': 'returned',
+            'actual_return_date': now,
+            'late_fee': late_fee
+        }}
+    )
+
+    try:
+        book_id = ObjectId(rental.get('book_id'))
+        book = Book.objects.get(_id=book_id)
+        book.available_copies += 1
+        book.save()
+    except:
+        pass
+
+    if late_fee > 0:
+        messages.warning(request, f'Đã trả sách "{rental.get("book_title")}". Phí trễ hạn: {late_fee}k VNĐ')
+    else:
+        messages.success(request, f'Đã trả sách "{rental.get("book_title")}" thành công!')
+
+    return redirect('my_rentals')

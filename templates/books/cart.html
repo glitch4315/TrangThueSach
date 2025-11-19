@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -110,7 +110,7 @@
                         <div class="item-subtotal">({{ item.price_per_day|floatformat:0 }}k × {{ item.rental_days }} ngày)</div>
                     </div>
                     <div class="item-actions">
-                        <form action="{% url 'remove_from_cart' item.id %}" method="post">
+                        <form action="{% url 'remove_from_cart' item.book_id %}" method="post">
                             {% csrf_token %}
                             <button type="submit" class="btn-remove">Xóa</button>
                         </form>
@@ -151,3 +151,7 @@
     </div>
 </body>
 </html>
+
+
+
+

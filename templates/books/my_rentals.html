@@ -1,0 +1,325 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sách Đã Thuê - BookFire</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #e0e0e0; }
+
+        .header { background: #1a1a1a; border-bottom: 1px solid #2a2a2a; padding: 1rem 0; position: sticky; top: 0; z-index: 1000; }
+        .nav-container { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.8rem; font-weight: bold; color: #ff6b6b; text-decoration: none; }
+        .logo span { color: #fff; }
+        .nav-links { display: flex; gap: 2rem; align-items: center; }
+        .nav-links a { color: #e0e0e0; text-decoration: none; transition: color 0.3s; }
+        .nav-links a:hover { color: #ff6b6b; }
+        .cart-btn { position: relative; background: #ff6b6b; padding: 0.6rem 1.2rem; border-radius: 6px; color: white !important; }
+        .cart-count { position: absolute; top: -8px; right: -8px; background: #fff; color: #ff6b6b; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 3rem 2rem; }
+        h1 { color: white; font-size: 2.5rem; margin-bottom: 2rem; }
+
+        .tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid #2a2a2a; }
+        .tab { padding: 1rem 2rem; background: transparent; border: none; color: #888; font-size: 1.1rem; font-weight: 600; cursor: pointer; position: relative; transition: all 0.3s; }
+        .tab.active { color: #ff6b6b; }
+        .tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: #ff6b6b; }
+        .tab:hover { color: #ff6b6b; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .rentals-grid { display: grid; gap: 1.5rem; }
+
+        .rental-card { background: #1a1a1a; border-radius: 12px; padding: 1.5rem; display: flex; gap: 1.5rem; transition: all 0.3s; border: 2px solid transparent; }
+        .rental-card:hover { border-color: #ff6b6b; box-shadow: 0 8px 30px rgba(255, 107, 107, 0.2); }
+
+        .rental-cover { width: 120px; height: 180px; border-radius: 8px; overflow: hidden; background: #2a2a2a; flex-shrink: 0; }
+        .rental-cover img { width: 100%; height: 100%; object-fit: cover; }
+
+        .rental-info { flex: 1; }
+        .rental-title { color: white; font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem; }
+        .rental-meta { color: #888; margin-bottom: 1rem; }
+        .rental-meta div { margin-bottom: 0.5rem; }
+
+        .status-badge { display: inline-block; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600; }
+        .status-active { background: #1a4d1a; color: #4ade80; }
+        .status-overdue { background: #4d1a1a; color: #ff6b6b; animation: pulse 2s infinite; }
+        .status-returned { background: #2a2a2a; color: #888; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .rental-dates { background: #2a2a2a; padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+        .date-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+        .date-row:last-child { margin-bottom: 0; }
+        .date-label { color: #888; }
+        .date-value { color: white; font-weight: 600; }
+
+        .progress-bar { height: 8px; background: #2a2a2a; border-radius: 4px; overflow: hidden; margin: 1rem 0; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #4ade80, #ff6b6b); transition: width 0.3s; }
+
+        .rental-actions { display: flex; gap: 1rem; margin-top: 1rem; }
+        .btn { padding: 0.8rem 1.5rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-block; }
+        .btn-return { background: #ff6b6b; color: white; }
+        .btn-return:hover { background: #ff5252; transform: translateY(-2px); }
+        .btn-extend { background: transparent; border: 2px solid #ff6b6b; color: #ff6b6b; }
+        .btn-extend:hover { background: #ff6b6b; color: white; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .late-fee { background: #4d1a1a; border: 2px solid #ff6b6b; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+        .late-fee-amount { color: #ff6b6b; font-size: 1.5rem; font-weight: bold; }
+
+        .empty-state { text-align: center; padding: 4rem 2rem; }
+        .empty-state-icon { font-size: 5rem; margin-bottom: 1rem; }
+        .empty-state h2 { color: white; margin-bottom: 1rem; }
+        .empty-state p { color: #888; margin-bottom: 2rem; }
+
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: #1a1a1a; padding: 1.5rem; border-radius: 12px; text-align: center; border: 2px solid #2a2a2a; }
+        .stat-value { font-size: 2.5rem; font-weight: bold; color: #ff6b6b; }
+        .stat-label { color: #888; margin-top: 0.5rem; }
+
+        .alert { padding: 1rem; border-radius: 8px; margin-bottom: 2rem; }
+        .alert-success { background: #1a4d1a; color: #4ade80; border: 1px solid #4ade80; }
+        .alert-warning { background: #4d3a1a; color: #ffa500; border: 1px solid #ffa500; }
+        .alert-error { background: #4d1a1a; color: #ff6b6b; border: 1px solid #ff6b6b; }
+
+        @media (max-width: 768px) {
+            .rental-card { flex-direction: column; }
+            .rental-cover { width: 100%; height: 300px; }
+            .stats { grid-template-columns: 1fr; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav-container">
+            <a href="/" class="logo">Book<span>Fire</span></a>
+            <div class="nav-links">
+                <a href="/">Trang Chủ</a>
+                <a href="{% url 'my_rentals' %}">Sách Đã Thuê</a>
+                <a href="{% url 'accounts:profile' %}">Hồ Sơ</a>
+                <a href="{% url 'cart' %}" class="cart-btn">
+                    🛒 Giỏ Hàng
+                    {% if cart_count > 0 %}
+                    <span class="cart-count">{{ cart_count }}</span>
+                    {% endif %}
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h1>📚 Sách Đã Thuê</h1>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Statistics -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value">{{ active_rentals.count }}</div>
+                <div class="stat-label">Đang Thuê</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ returned_rentals.count }}</div>
+                <div class="stat-label">Đã Trả</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">
+                    {% for rental in active_rentals %}
+                        {% if rental.is_overdue %}1{% endif %}
+                    {% endfor %}
+                    {% if not active_rentals %}0{% endif %}
+                </div>
+                <div class="stat-label">Quá Hạn</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('active')">
+                Đang Thuê ({{ active_rentals.count }})
+            </button>
+            <button class="tab" onclick="switchTab('returned')">
+                Đã Trả ({{ returned_rentals.count }})
+            </button>
+        </div>
+
+        <!-- Active Rentals Tab -->
+        <div id="active-tab" class="tab-content active">
+            {% if active_rentals %}
+                <div class="rentals-grid">
+                    {% for rental in active_rentals %}
+                    <div class="rental-card">
+                        <div class="rental-cover">
+                            {% if rental.book_cover %}
+                                <img src="{{ rental.book_cover }}" alt="{{ rental.book_title }}">
+                            {% else %}
+                                <div style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 3rem;">📖</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="rental-info">
+                            <h3 class="rental-title">{{ rental.book_title }}</h3>
+
+                            <div class="rental-meta">
+                                <div>📦 Mã đơn: <strong>{{ rental.order_number }}</strong></div>
+                                <div>
+                                    {% if rental.status == 'active' %}
+                                        <span class="status-badge status-active">✅ Đang Thuê</span>
+                                    {% elif rental.status == 'overdue' %}
+                                        <span class="status-badge status-overdue">⚠️ Quá Hạn {{ rental.days_overdue }} ngày</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="rental-dates">
+                                <div class="date-row">
+                                    <span class="date-label">📅 Ngày thuê:</span>
+                                    <span class="date-value">{{ rental.rental_date|date:"d/m/Y H:i" }}</span>
+                                </div>
+                                <div class="date-row">
+                                    <span class="date-label">⏰ Hạn trả:</span>
+                                    <span class="date-value">{{ rental.expected_return_date|date:"d/m/Y H:i" }}</span>
+                                </div>
+                                <div class="date-row">
+                                    <span class="date-label">⏳ Thời gian thuê:</span>
+                                    <span class="date-value">{{ rental.rental_days }} ngày</span>
+                                </div>
+                                <div class="date-row">
+                                    <span class="date-label">💰 Tổng tiền:</span>
+                                    <span class="date-value">{{ rental.total_cost|floatformat:0 }}k VNĐ</span>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {% widthratio rental.days_overdue rental.rental_days 100 %}%"></div>
+                            </div>
+
+                            {% if rental.is_overdue %}
+                                <div class="late-fee">
+                                    <div>⚠️ <strong>Phí trễ hạn:</strong></div>
+                                    <div class="late-fee-amount">{{ rental.calculate_late_fee }}k VNĐ</div>
+                                    <div style="color: #888; margin-top: 0.5rem; font-size: 0.9rem;">
+                                        (10k/ngày × {{ rental.days_overdue }} ngày)
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <div class="rental-actions">
+                               <form action="{% url 'return_book' rental.id %}" method="post" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-return">
+                                        ✓ Trả Sách
+                                    </button>
+                                </form>
+                                <button class="btn btn-extend" disabled>
+                                    ⏱️ Gia Hạn (Sắp có)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">📚</div>
+                    <h2>Bạn chưa thuê sách nào</h2>
+                    <p>Khám phá hàng ngàn đầu sách thú vị và bắt đầu hành trình đọc của bạn!</p>
+                    <a href="/" class="btn btn-return">Khám Phá Ngay</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Returned Rentals Tab -->
+        <div id="returned-tab" class="tab-content">
+            {% if returned_rentals %}
+                <div class="rentals-grid">
+                    {% for rental in returned_rentals %}
+                    <div class="rental-card">
+                        <div class="rental-cover">
+                            {% if rental.book_cover %}
+                                <img src="{{ rental.book_cover }}" alt="{{ rental.book_title }}" style="opacity: 0.6;">
+                            {% else %}
+                                <div style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 3rem; opacity: 0.6;">📖</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="rental-info">
+                            <h3 class="rental-title">{{ rental.book_title }}</h3>
+
+                            <div class="rental-meta">
+                                <div>📦 Mã đơn: <strong>{{ rental.order_number }}</strong></div>
+                                <div><span class="status-badge status-returned">✓ Đã Trả</span></div>
+                            </div>
+
+                            <div class="rental-dates">
+                                <div class="date-row">
+                                    <span class="date-label">📅 Ngày thuê:</span>
+                                    <span class="date-value">{{ rental.rental_date|date:"d/m/Y" }}</span>
+                                </div>
+                                <div class="date-row">
+                                    <span class="date-label">✓ Ngày trả:</span>
+                                    <span class="date-value">{{ rental.actual_return_date|date:"d/m/Y" }}</span>
+                                </div>
+                                <div class="date-row">
+                                    <span class="date-label">💰 Đã thanh toán:</span>
+                                    <span class="date-value">{{ rental.total_cost|floatformat:0 }}k VNĐ</span>
+                                </div>
+                                {% if rental.late_fee > 0 %}
+                                <div class="date-row">
+                                    <span class="date-label">⚠️ Phí trễ:</span>
+                                    <span class="date-value" style="color: #ff6b6b;">{{ rental.late_fee|floatformat:0 }}k VNĐ</span>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="rental-actions">
+                                <a href="{% url 'book_detail' rental.book_id %}" class="btn btn-extend">
+                                    👁️ Xem Chi Tiết
+                                </a>
+                                <button class="btn btn-extend">
+                                    ⭐ Đánh Giá (Sắp có)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">✓</div>
+                    <h2>Chưa có sách đã trả</h2>
+                    <p>Lịch sử trả sách sẽ được hiển thị ở đây</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tab + '-tab').classList.add('active');
+        }
+    </script>
+</body>
+</html>
+
+
+
+

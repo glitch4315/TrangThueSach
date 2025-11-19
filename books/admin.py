@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Book, CartItem, Order, OrderItem
+from .models import Book, CartItem, Order, OrderItem, Rental
+
 
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
@@ -21,3 +22,16 @@ class OrderAdmin(admin.ModelAdmin):
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = ['book_title', 'order_id', 'rental_days', 'subtotal']
+
+
+@admin.register(Rental)
+class RentalAdmin(admin.ModelAdmin):
+    list_display = ['book_title', 'customer_name', 'rental_date', 'expected_return_date', 'status', 'is_overdue']
+    list_filter = ['status', 'rental_date']
+    search_fields = ['book_title', 'customer_name', 'customer_email', 'order_number']
+    readonly_fields = ['rental_date', 'created_at', 'updated_at']
+
+    def is_overdue(self, obj):
+        return '⚠️ Có' if obj.is_overdue() else '✅ Không'
+
+    is_overdue.short_description = 'Quá hạn'

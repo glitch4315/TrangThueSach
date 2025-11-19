@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -43,11 +43,11 @@
             <a href="/">Trang Chủ</a>
             <a href="{% url 'cart' %}">🛒 Giỏ Hàng</a>
             {% if user.is_authenticated %}
-                <a href="{% url 'profile' %}">{{ user.username }}</a>
-                <a href="{% url 'logout' %}">Đăng xuất</a>
+                <a href="{% url 'accounts:profile' %}">{{ user.username }}</a>
+                <a href="{% url 'accounts:logout' %}">Đăng xuất</a>
             {% else %}
-                <a href="{% url 'login' %}">Đăng nhập</a>
-                <a href="{% url 'register' %}">Đăng ký</a>
+                <a href="{% url 'accounts:login' %}">Đăng nhập</a>
+                <a href="{% url 'accounts:register' %}">Đăng ký</a>
             {% endif %}
         </div>
     </header>
@@ -62,7 +62,7 @@
 
             <div class="books-grid">
                 {% for book in books %}
-                <div class="book-card" onclick="window.location.href='{% url 'book_detail' book.id %}'">
+                <div class="book-card" onclick="window.location.href='/book/{{ book.id }}/'">
                     <div class="book-cover">
                         {% if book.cover_image %}
                         <img src="{{ book.cover_image }}" alt="{{ book.title }}">
@@ -79,7 +79,7 @@
                         <p class="book-author">{{ book.author }}</p>
                         <div class="book-footer">
                             <div class="book-price">{{ book.rental_price_per_day }}k <small>/ngày</small></div>
-                            <button class="quick-add" onclick="event.stopPropagation(); window.location.href='{% url 'book_detail' book.id %}'">+</button>
+                            <button class="quick-add" onclick="event.stopPropagation(); window.location.href='/book/{{ book.id }}/'">+</button>
                         </div>
                     </div>
                 </div>
@@ -89,3 +89,8 @@
     </div>
 </body>
 </html>
+
+
+
+
+
