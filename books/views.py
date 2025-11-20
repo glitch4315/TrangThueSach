@@ -10,6 +10,10 @@ import string
 import uuid
 from .models import Book, CartItem, Order, OrderItem, Rental
 from pymongo import MongoClient
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
 
 mongo_client = MongoClient('localhost', 27017)
 mongo_db = mongo_client['bookrental_db']
@@ -399,3 +403,5 @@ def return_book(request, rental_id):
         messages.success(request, f'Đã trả sách "{rental.get("book_title")}" thành công!')
 
     return redirect('my_rentals')
+
+

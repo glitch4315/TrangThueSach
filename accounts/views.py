@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.urls import reverse
+
 from .forms import RegisterForm, LoginForm
 from .models import Profile
 
@@ -13,7 +15,7 @@ def register_view(request):
             user.set_password(form.cleaned_data['password'])  # hash đúng chuẩn
             user.save()
             messages.success(request, "Đăng ký thành công! Hãy đăng nhập.")
-            return redirect('login')
+            return redirect('accounts:login')
     else:
         form = RegisterForm()
     return render(request, 'accounts/register.html', {'form': form})
@@ -47,4 +49,4 @@ def profile_view(request):
 
 def logout_view(request):
     logout(request)
-    return redirect('login')
+    return redirect(reverse("accounts:login"))
