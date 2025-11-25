@@ -1,1 +1,1 @@
-web: gunicorn TrangThueSach.wsgi
+web: gunicorn bookrental.wsgi
