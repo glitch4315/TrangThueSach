@@ -8,6 +8,7 @@ sqlparse==0.2.4
 typing_extensions==4.15.0
 gunicorn==21.2.0
 dnspython>=2.3.0
+certifi>=2025.7.22
 
 
 
