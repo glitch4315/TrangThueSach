@@ -54,9 +54,8 @@ DATABASES = {
         'ENGINE': 'djongo',
         'NAME': 'bookrental_db',
         'CLIENT': {
-            'host': 'localhost',
-            'port': 27017,
-            }
+            'host': f"mongodb+srv://{os.environ.get('MONGO_USER')}:{os.environ.get('MONGO_PASS')}@cluster0.qwcg4kg.mongodb.net/?appName=Cluster0",
+        }
         },
     'auth_db': {
         'ENGINE': 'django.db.backends.sqlite3',
