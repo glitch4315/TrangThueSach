@@ -1,5 +1,6 @@
 import os
 import certifi
+import ssl
 
 from pathlib import Path
 
@@ -58,7 +59,8 @@ DATABASES = {
         'CLIENT': {
             'host': 'mongodb+srv://quanster365_db_user:bonthgmuoi2@cluster0.qwcg4kg.mongodb.net/?appName=Cluster0',
             'ssl': True,
-            'ssl_cert_reqs': certifi.where(),
+            'ssl_cert_reqs': ssl.CERT_REQUIRED,
+            'tlsCAFile': certifi.where(),
         }
         },
     'auth_db': {
