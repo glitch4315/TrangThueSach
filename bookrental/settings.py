@@ -56,9 +56,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         'NAME': 'bookrental_db',
+        'ENFORCE_SCHEMA': False
         'CLIENT': {
             'host': 'mongodb+srv://quanster365_db_user:bonthgmuoi2@cluster0.qwcg4kg.mongodb.net/?appName=Cluster0',
-              'tls': False,
         }
         },
     'auth_db': {
