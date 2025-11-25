@@ -55,7 +55,8 @@ DATABASES = {
         'NAME': 'bookrental_db',
         'CLIENT': {
             'host': 'mongodb+srv://quanster365_db_user:bonthgmuoi2@cluster0.qwcg4kg.mongodb.net/?appName=Cluster0',
-            'tls': True
+            'ssl': True,
+            'ssl_cert_reqs': certifi.where(),
         }
         },
     'auth_db': {
