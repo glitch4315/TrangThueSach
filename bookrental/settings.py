@@ -60,7 +60,6 @@ DATABASES = {
             'host': 'mongodb+srv://quanster365_db_user:bonthgmuoi2@cluster0.qwcg4kg.mongodb.net/?appName=Cluster0',
               'ssl': True,
             'ssl_cert_reqs': ssl.CERT_NONE,
-            'ssl_ca_certs': certifi.where(),
         }
         },
     'auth_db': {
