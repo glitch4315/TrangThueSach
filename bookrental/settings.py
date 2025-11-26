@@ -58,9 +58,9 @@ DATABASES = {
         'NAME': 'bookrental_db',
         'ENFORCE_SCHEMA': False,
         'CLIENT': {
-            'host': 'mongodb+srv://quanster365_db_user:bonthgmuoi2@cluster0.qwcg4kg.mongodb.net/?appName=Cluster0',
+            'host': 'mongodb://localhost:27017/bookrental_db',
         }
-        },
+    },
     'auth_db': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'auth.sqlite3',

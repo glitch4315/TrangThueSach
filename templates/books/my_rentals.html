@@ -103,7 +103,6 @@
             <div class="nav-links">
                 <a href="/">Trang Chủ</a>
                 <a href="{% url 'my_rentals' %}">Sách Đã Thuê</a>
-                <a href="{% url 'accounts:profile' %}">Hồ Sơ</a>
                 <a href="{% url 'cart' %}" class="cart-btn">
                     🛒 Giỏ Hàng
                     {% if cart_count > 0 %}
@@ -126,20 +125,15 @@
         <!-- Statistics -->
         <div class="stats">
             <div class="stat-card">
-                <div class="stat-value">{{ active_rentals.count }}</div>
+                <div class="stat-value">{{ active_count }}</div>
                 <div class="stat-label">Đang Thuê</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">{{ returned_rentals.count }}</div>
+                <div class="stat-value">{{ returned_count }}</div>
                 <div class="stat-label">Đã Trả</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">
-                    {% for rental in active_rentals %}
-                        {% if rental.is_overdue %}1{% endif %}
-                    {% endfor %}
-                    {% if not active_rentals %}0{% endif %}
-                </div>
+                <div class="stat-value">{{ overdue_count }}</div>
                 <div class="stat-label">Quá Hạn</div>
             </div>
         </div>
@@ -147,10 +141,10 @@
         <!-- Tabs -->
         <div class="tabs">
             <button class="tab active" onclick="switchTab('active')">
-                Đang Thuê ({{ active_rentals.count }})
+                Đang Thuê ({{ active_count }})
             </button>
             <button class="tab" onclick="switchTab('returned')">
-                Đã Trả ({{ returned_rentals.count }})
+                Đã Trả ({{ returned_count }})
             </button>
         </div>
 
@@ -202,14 +196,17 @@
                             </div>
 
                             <!-- Progress Bar -->
+                            {% if rental.rental_days > 0 %}
                             <div class="progress-bar">
-                                <div class="progress-fill" style="width: {% widthratio rental.days_overdue rental.rental_days 100 %}%"></div>
+                                {% widthratio rental.days_overdue rental.rental_days 100 as progress_percent %}
+                                <div class="progress-fill" style="width: {% if progress_percent > 100 %}100{% else %}{{ progress_percent }}{% endif %}%"></div>
                             </div>
+                            {% endif %}
 
                             {% if rental.is_overdue %}
                                 <div class="late-fee">
                                     <div>⚠️ <strong>Phí trễ hạn:</strong></div>
-                                    <div class="late-fee-amount">{{ rental.calculate_late_fee }}k VNĐ</div>
+                                    <div class="late-fee-amount">{{ rental.calculate_late_fee|floatformat:0 }}k VNĐ</div>
                                     <div style="color: #888; margin-top: 0.5rem; font-size: 0.9rem;">
                                         (10k/ngày × {{ rental.days_overdue }} ngày)
                                     </div>
@@ -219,7 +216,7 @@
                             <div class="rental-actions">
                                <form action="{% url 'return_book' rental.id %}" method="post" style="display: inline;">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-return">
+                                    <button type="submit" class="btn btn-return" onclick="return confirm('Xác nhận trả sách?')">
                                         ✓ Trả Sách
                                     </button>
                                 </form>
@@ -288,7 +285,7 @@
                                 <a href="{% url 'book_detail' rental.book_id %}" class="btn btn-extend">
                                     👁️ Xem Chi Tiết
                                 </a>
-                                <button class="btn btn-extend">
+                                <button class="btn btn-extend" disabled>
                                     ⭐ Đánh Giá (Sắp có)
                                 </button>
                             </div>
@@ -319,7 +316,3 @@
     </script>
 </body>
 </html>
-
-
-
-
