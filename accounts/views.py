@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
 
-from .forms import RegisterForm, LoginForm
+from .forms import RegisterForm, LoginForm, UserForm, ProfileForm
 from .models import Profile
 
 def register_view(request):
@@ -46,6 +46,31 @@ def profile_view(request):
         'user': user,
     }
     return render(request, 'accounts/profile.html', context)
+@login_required
+def edit_profile(request):
+    user = request.user
+    try:
+        profile = user.profile
+    except Profile.DoesNotExist:
+        profile = Profile.objects.create(user=user)
+
+    if request.method == 'POST':
+        user_form = UserForm(request.POST, instance=user)
+        profile_form = ProfileForm(request.POST, request.FILES, instance=profile)
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            messages.success(request, "Hồ sơ đã được cập nhật!")
+            return redirect('accounts:profile')
+    else:
+        user_form = UserForm(instance=user)
+        profile_form = ProfileForm(instance=profile)
+
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form
+    }
+    return render(request, 'accounts/edit_profile.html', context)
 
 def logout_view(request):
     logout(request)
