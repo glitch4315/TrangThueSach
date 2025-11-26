@@ -58,7 +58,7 @@ DATABASES = {
         'NAME': 'bookrental_db',
         'ENFORCE_SCHEMA': False,
         'CLIENT': {
-            'host': 'mongodb://localhost:27017/bookrental_db',
+            'host': 'mongodb+srv://quanster365_db_user:bonthgmuoi2@cluster0.qwcg4kg.mongodb.net/?appName=Cluster0',
         }
     },
     'auth_db': {
